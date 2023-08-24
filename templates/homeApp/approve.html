@@ -1,0 +1,210 @@
+{% extends "index.html" %} {% load static %} {% block title %} Home | Fraud
+Detection System {% endblock %} {% block css %}
+
+<link href="{% static 'assets/css/teststyle.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/css/style.css' %}" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<style>
+    /* Add this style for the loading spinner */
+    #loadingSpinner {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.7);
+        z-index: 9999;
+    }
+
+	
+	.btn{
+		width: 100%;
+		margin: 0px auto 0px auto;
+		padding: 10px;
+		color: #FFFFFF;
+		font-size: 15px;
+		background-color: #5cb874;
+		border-style: none;
+	}
+	.btn:hover{
+		opacity: 0.8;
+	}
+	.btn-cover{
+		width: 90%;
+		margin: 20px auto 10px auto;
+	}
+	.text{
+		width:100%;
+	}
+
+    .spinner {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 50px;
+        height: 50px;
+        border: 5px solid rgba(0, 0, 0, 0.1);
+        border-left-color: #000;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %} {% block content %}
+<main id="main">
+  
+  <!-- ======= Hero Section ======= -->
+  <section id="homesection" style="padding: 0px 0px">
+    <!--__________________________________ header-box______________________________________________ -->
+    <div id="header-container">
+      <h1 id="header2">Report Approval Page</h1>
+    </div>
+    <div class="row" style="width: 20%; float: right; margin: 1% 8%">
+        <label for="bank">Select Banks</label>
+        <select name="" id="bank"></select>
+        
+        <button id="submitbank" style="color:#5cb874;border: 3px solid #5cb874; background-color: #FFFFFF; border-radius: 5px; margin-top: 10px;"> Display </button>
+      </div>
+    <table
+      id="example"
+      class="table table-striped"
+      style="width: 90%; margin: 1% 4%"
+    >
+      <thead style="background-color: brown; text-align: center">
+        <tr>
+          <th>Sr. No</th>
+          <th>Account Number</th>
+          <th>Phone Number</th>
+          <th>Email</th>
+          <th>Description</th>
+          <th>Proof</th>
+          <th>Action</th>
+
+        </tr>
+      </thead>
+      <tbody style="text-align: center" id="tbody">
+        
+      </tbody>
+    </table>
+  </section>
+  <!-- End Hero -->
+
+  <!-- Include necessary libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    axios.get('http://127.0.0.1:8080/api/v1/banks')
+    .then(response => {
+        console.log(response.data)
+        var res = response.data;
+        for (let i = 0; i < res.length; i++) {
+            var val = res[i];
+            document.getElementById('bank').innerHTML += "<option value="+val.id+">"+val.name+"</option>"
+        }
+        // document.getElementById('selectOption').innerHTML = "<option></option>";
+       
+
+    })
+    .catch(error => {
+        console.error(error);
+
+        // Hide loading spinner
+        document.getElementById('loadingSpinner').style.display = 'none';
+    });
+</script>
+<script>
+    document.getElementById('submitbank').addEventListener('click', function(event) {
+        event.preventDefault(); 
+    var selectElement =  document.getElementById('bank');
+    var selectedOptionIndex = selectElement.selectedIndex;
+    var selectedOption = selectElement.options[selectedOptionIndex];
+    var value = selectedOption.value;
+
+    axios.get('http://127.0.0.1:8080/api/v1/getReports?bank=' + value)
+    .then(response => {
+        var res = response.data;
+        var tbody = document.getElementById('tbody');
+        tbody.innerHTML = '';
+        
+        for (let index = 0; index < res.length; index++) {
+            var element = res[index];
+            if(element.status == 0){
+                tbody.innerHTML += "<tr>\
+                <td>" + (index + 1) + "</td>\
+                <td>" + element.account_no + "</td>\
+                <td>" + element.phone + "</td>\
+                <td>" + element.email + "</td>\
+                <td>" + element.description + "</td>\
+                <td><a href=\"#\">Download Documents</a></td>\
+                <td><button class='approve-button' onclick='approveItem(" + element.id + ","+element.bank_id+")'>Approve</button></td>\
+                </tr>"; 
+            }else{
+                tbody.innerHTML += "<tr>\
+                <td>" + (index + 1) + "</td>\
+                <td>" + element.account_no + "</td>\
+                <td>" + element.phone + "</td>\
+                <td>" + element.email + "</td>\
+                <td>" + element.description + "</td>\
+                <td><a href=\"#\">Download Documents</a></td>\
+                <td>Approved</td>\
+                </tr>"; 
+            }
+        }
+
+        // Apply styles to the buttons after they are added to the table
+        var approveButtons = document.querySelectorAll('.approve-button');
+        approveButtons.forEach(button => {
+            button.style.backgroundColor = '#5cb874';
+            button.style.color = 'white';
+            button.style.border = 'none';
+            button.style.borderRadius = '5px';
+            button.style.padding = '5px 10px';
+            button.style.cursor = 'pointer';
+        });
+    })
+    .catch(error => {
+        console.error(error);
+        // Hide loading spinner
+        // document.getElementById('loadingSpinner').style.display = 'none';
+    });
+});
+
+function approveItem(itemId,bank_id) {
+    // Handle the approval logic using the provided item ID
+    console.log("Approving item with ID:", itemId);
+    // You can perform additional actions here based on the item ID
+    axios.get('http://127.0.0.1:8080/api/v1/approve?bank=' + bank_id+'&id='+itemId)
+    .then(response => {
+        if(response.data == 'success'){
+                    Swal.fire(
+                        'Approved!',
+                        'The Request has been approved!',
+                        'success'
+                    );
+        }
+        else{
+            Swal.fire(
+            'Failed!',
+            'failed to approve request, contact the admin',
+            'erreor'
+            )
+        }
+    })
+    .catch(error => {
+        console.error(error);
+        // Hide loading spinner
+        // document.getElementById('loadingSpinner').style.display = 'none';
+    });
+}
+
+</script>
+</main>
+
+{% endblock %}
